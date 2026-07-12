@@ -5,8 +5,10 @@ let args = CommandLine.arguments
 
 if args.count > 1 {
     switch args[1] {
+    case "notify":
+        HookClient.notify()       // never returns（通知 app，非阻塞）
     case "ask":
-        HookClient.run()          // never returns
+        HookClient.run()          // never returns（保留：阻塞式 hook-decision）
     case "install-hook":
         let bin = Bundle.main.executablePath ?? args[0]
         let bak = try? HookInstaller.install(binaryPath: bin)

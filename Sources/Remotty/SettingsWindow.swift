@@ -57,7 +57,7 @@ struct SettingsView: View {
                 header("Joy-Con")
                 Toggle("震動提醒", isOn: $rumble)
                     .onChange(of: rumble) { _, v in AppSettings.shared.rumbleEnabled = v }
-                Text("按鍵：A=Approve · B=Reject · X=Skip · Home=開 Terminal · Menu=Auto Approve")
+                Text("方向鍵：上 ↑=Approve · 下 ↓=Reject · 右 →=Skip · 左 ←=開 Terminal · −=Auto Approve")
                     .font(.caption).foregroundStyle(.secondary)
 
                 HStack {

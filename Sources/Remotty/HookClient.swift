@@ -4,22 +4,38 @@ import Foundation
 /// 讀 stdin(hook JSON) → 連 app socket → 阻塞等決策 → 印 permissionDecision → exit 0。
 /// app 沒跑 / 逾時 → 回 "ask"（安全退回原生 prompt）。
 enum HookClient {
+    /// `remotty notify` —— PermissionRequest hook 目標：只通知 app（非阻塞），立刻退出。
+    /// 不回決策 → Claude Code 照常顯示原生 prompt，由使用者按 Joy-Con → app 模擬鍵入回答。
+    static func notify() -> Never {
+        let req = parseRequest()
+        let fd = UnixSocket.connect(Paths.socket)
+        if fd >= 0 {
+            if let data = try? JSONEncoder.iso.encode(WireMessage.request(req)) {
+                _ = UnixSocket.writeLine(fd, data)
+            }
+            close(fd)
+        }
+        exit(0) // 一律 exit 0，不影響 Claude 原生流程
+    }
+
+    /// `remotty ask` —— （保留）阻塞式 hook-decision 模式，給沒有原生 prompt 的 provider 用。
     static func run() -> Never {
+        let req = parseRequest()
+        let decision = ask(req)
+        emit(decision)
+        exit(0)
+    }
+
+    private static func parseRequest() -> PermissionRequest {
         let input = FileHandle.standardInput.readDataToEndOfFile()
         let hook = ((try? JSONSerialization.jsonObject(with: input)) as? [String: Any]) ?? [:]
-
         let sessionId = hook["session_id"] as? String ?? ""
         let cwd = hook["cwd"] as? String ?? FileManager.default.currentDirectoryPath
         let toolName = hook["tool_name"] as? String ?? "?"
         let command = summarize(toolInput: hook["tool_input"] as? [String: Any] ?? [:], toolName: toolName)
-
-        let req = PermissionRequest(
+        return PermissionRequest(
             id: UUID().uuidString, sessionId: sessionId, cwd: cwd,
             toolName: toolName, command: command, timestamp: Date())
-
-        let decision = ask(req)
-        emit(decision)
-        exit(0)
     }
 
     private static func summarize(toolInput: [String: Any], toolName: String) -> String {

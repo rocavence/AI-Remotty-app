@@ -40,16 +40,15 @@ final class AppController: NSObject, NSApplicationDelegate {
     // MARK: Queue
 
     private func enqueue(_ req: PermissionRequest) {
-        // Auto Approve：直接放行
-        if AppSettings.shared.autoApprove {
-            provider.resolve(id: req.id, decision: .allow)
-            return
-        }
         queue.append(req)
         joycon.buzzNewRequest()
         scheduleReminder(req)
-        scheduleAutoAnswer(req)
+        scheduleExpiry(req)
         refresh()
+        // Auto Approve：自動送出放行鍵入（預設關）
+        if AppSettings.shared.autoApprove {
+            answer(req, approve: true)
+        }
     }
 
     private func remove(_ id: String, buzz: Bool) {
@@ -60,21 +59,34 @@ final class AppController: NSObject, NSApplicationDelegate {
         refresh()
     }
 
-    /// 對「最前一筆」下決策（Joy-Con 按鍵作用對象）。
+    /// 對「最前一筆」作用（Joy-Con 按鍵對象）。
     private var front: PermissionRequest? { queue.first }
 
-    func decide(id: String, _ decision: PermissionDecision) {
-        provider.resolve(id: id, decision: decision)
-        remove(id, buzz: true)
+    /// 切到 terminal → 模擬鍵入回答原生 prompt。approve=打「1 ↵」、reject=Esc。
+    private func answer(_ req: PermissionRequest, approve: Bool) {
+        Terminals.current().activate()
+        // 等視窗真的到最前再送鍵，避免打到別的 app
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            if approve {
+                KeySim.type("1"); KeySim.pressReturn()
+            } else {
+                KeySim.pressEscape()
+            }
+        }
+        remove(req.id, buzz: true)
     }
+
+    // 給選單用（指定 id）
+    func approve(id: String) { if let r = queue.first(where: { $0.id == id }) { answer(r, approve: true) } }
+    func reject(id: String)  { if let r = queue.first(where: { $0.id == id }) { answer(r, approve: false) } }
 
     // MARK: Joy-Con 動作
 
     private func handle(_ action: AppSettings.Action) {
         switch action {
-        case .approve: if let r = front { decide(id: r.id, .allow) }
-        case .reject:  if let r = front { decide(id: r.id, .deny) }
-        case .skip:    if let r = front { decide(id: r.id, .ask) }   // 退回原生 prompt
+        case .approve: if let r = front { answer(r, approve: true) }
+        case .reject:  if let r = front { answer(r, approve: false) }
+        case .skip:    if let r = front { remove(r.id, buzz: false) } // 只從 queue 移除，不動 terminal
         case .openTerminal: Terminals.current().activate()
         case .toggleAuto:
             AppSettings.shared.autoApprove.toggle()
@@ -82,7 +94,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         }
     }
 
-    // MARK: 提醒 / 自動回覆
+    // MARK: 提醒 / 過期清除
 
     private func scheduleReminder(_ req: PermissionRequest) {
         let iv = AppSettings.shared.reminderInterval
@@ -93,13 +105,11 @@ final class AppController: NSObject, NSApplicationDelegate {
         reminderTimers[req.id] = t
     }
 
-    private func scheduleAutoAnswer(_ req: PermissionRequest) {
+    /// pending 太久（可能已在別處回答）自動清掉，避免之後亂送鍵入。
+    private func scheduleExpiry(_ req: PermissionRequest) {
         let after = AppSettings.shared.autoAnswerAfter
         let t = Timer.scheduledTimer(withTimeInterval: after, repeats: false) { [weak self] _ in
-            guard let self, self.queue.contains(where: { $0.id == req.id }) else { return }
-            // 逼近 hook timeout：回 ask（安全退回原生 prompt），不誤放行也不誤擋
-            self.provider.resolve(id: req.id, decision: .ask)
-            self.remove(req.id, buzz: false)
+            self?.remove(req.id, buzz: false)
         }
         autoAnswerTimers[req.id] = t
     }

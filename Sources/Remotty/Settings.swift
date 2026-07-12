@@ -5,15 +5,32 @@ final class AppSettings {
     static let shared = AppSettings()
     private let d = UserDefaults(suiteName: "com.rocavence.remotty") ?? .standard
 
-    // 按鍵映射：動作 → GameController 按鍵名（見 spike，如 "Button A"）
+    // 按鍵映射：動作 → GameController 按鍵名。
+    // Joy-Con (L) 實體箭頭 → GCController（實測）：上=Button B 右=Button Y 下=Button X 左=Button A。
+    // 預設：右=approve、左=reject、上=開 terminal、下=skip。
     enum Action: String, CaseIterable { case approve, reject, skip, openTerminal, toggleAuto }
     private static let defaultMapping: [String: String] = [
-        Action.approve.rawValue: "Button A",
-        Action.reject.rawValue: "Button B",
-        Action.skip.rawValue: "Button X",
-        Action.openTerminal.rawValue: "Button Home",
-        Action.toggleAuto.rawValue: "Button Menu",
+        Action.approve.rawValue: "Button Y",      // 右 →
+        Action.reject.rawValue: "Button A",       // 左 ←
+        Action.openTerminal.rawValue: "Button B", // 上 ↑
+        Action.skip.rawValue: "Button X",         // 下 ↓
+        Action.toggleAuto.rawValue: "Button Menu",// − / Menu
     ]
+
+    /// 按鍵名 → 人看得懂的箭頭標籤。
+    static func buttonLabel(_ name: String) -> String {
+        switch name {
+        case "Button B": return "上 ↑"
+        case "Button X": return "下 ↓"
+        case "Button Y": return "右 →"
+        case "Button A": return "左 ←"
+        case "Button Menu": return "− / Menu"
+        case "Button Home": return "□ Capture"
+        case "Left Shoulder": return "L"
+        case "Right Shoulder": return "ZL"
+        default: return name
+        }
+    }
 
     var mapping: [String: String] {
         get { (d.dictionary(forKey: "mapping") as? [String: String]) ?? Self.defaultMapping }

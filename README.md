@@ -48,13 +48,15 @@ open /Applications/AI-Remotty.app
 
 ### Joy-Con 按鍵（預設）
 
-| 鍵 | 動作 |
+左 Joy-Con 的四顆方向鍵（GCController 實際回報成 Button B/Y/X/A）：
+
+| 實體鍵 | 動作 |
 |----|------|
-| A | Approve（放行最前一筆）|
-| B | Reject |
-| X | Skip（退回 Claude Code 原生 prompt）|
-| Home | 開啟選定的 Terminal |
-| Menu | 切換 Auto Approve |
+| 上 ↑ | Approve（放行最前一筆）|
+| 下 ↓ | Reject |
+| 右 → | Skip（退回 Claude Code 原生 prompt）|
+| 左 ← | 開啟選定的 Terminal |
+| − / Menu | 切換 Auto Approve |
 
 ### Hook 安裝做了什麼
 

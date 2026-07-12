@@ -1,9 +1,10 @@
 import Foundation
 
-/// 安裝/移除 Claude Code 的 PreToolUse hook。
+/// 安裝/移除 Claude Code 的 PermissionRequest hook（只通知、不阻塞、不決定）。
 /// 動 ~/.claude/settings.json 前先備份；merge-append，保留既有 hook（如 Otty 的）。
 enum HookInstaller {
     static let marker = "remotty-hook.sh"
+    static let event = "PermissionRequest"
 
     static var settingsURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -13,7 +14,7 @@ enum HookInstaller {
     static func isInstalled() -> Bool {
         guard let dict = readSettings(),
               let hooks = dict["hooks"] as? [String: Any],
-              let pre = hooks["PreToolUse"] as? [[String: Any]] else { return false }
+              let pre = hooks[event] as? [[String: Any]] else { return false }
         return pre.contains { entry in
             (entry["hooks"] as? [[String: Any]])?.contains {
                 ($0["command"] as? String)?.contains(marker) ?? false
@@ -30,7 +31,7 @@ enum HookInstaller {
         let backup = try backupIfExists()
 
         var hooks = dict["hooks"] as? [String: Any] ?? [:]
-        var pre = hooks["PreToolUse"] as? [[String: Any]] ?? []
+        var pre = hooks[event] as? [[String: Any]] ?? []
 
         // 去重
         pre.removeAll { entry in
@@ -39,14 +40,12 @@ enum HookInstaller {
             } ?? false
         }
         pre.append([
-            "matcher": "*",
             "hooks": [[
                 "type": "command",
                 "command": Paths.hookScript.path,
-                "timeout": 120,
             ]],
         ])
-        hooks["PreToolUse"] = pre
+        hooks[event] = pre
         dict["hooks"] = hooks
         try writeSettings(dict)
         return backup
@@ -56,7 +55,7 @@ enum HookInstaller {
     static func uninstall() throws -> Bool {
         guard var dict = readSettings(),
               var hooks = dict["hooks"] as? [String: Any],
-              var pre = hooks["PreToolUse"] as? [[String: Any]] else { return false }
+              var pre = hooks[event] as? [[String: Any]] else { return false }
         let before = pre.count
         pre.removeAll { entry in
             (entry["hooks"] as? [[String: Any]])?.contains {
@@ -65,7 +64,7 @@ enum HookInstaller {
         }
         guard pre.count != before else { return false }
         _ = try? backupIfExists()
-        if pre.isEmpty { hooks.removeValue(forKey: "PreToolUse") } else { hooks["PreToolUse"] = pre }
+        if pre.isEmpty { hooks.removeValue(forKey: event) } else { hooks[event] = pre }
         dict["hooks"] = hooks
         try writeSettings(dict)
         return true
@@ -76,8 +75,8 @@ enum HookInstaller {
     private static func writeWrapper(binaryPath: String) {
         let script = """
         #!/bin/bash
-        # AI-Remotty PreToolUse hook —— 轉交給 app 等 Joy-Con 決策。
-        exec "\(binaryPath)" ask
+        # AI-Remotty PermissionRequest hook —— 只通知 app（非阻塞），使用者按 Joy-Con 回答原生 prompt。
+        exec "\(binaryPath)" notify
         """
         try? script.write(to: Paths.hookScript, atomically: true, encoding: .utf8)
         try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: Paths.hookScript.path)

@@ -79,10 +79,10 @@ final class MenuBarController {
 
     // MARK: actions
     @objc private func onApprove(_ s: NSMenuItem) {
-        if let id = s.representedObject as? String { controller?.decide(id: id, .allow) }
+        if let id = s.representedObject as? String { controller?.approve(id: id) }
     }
     @objc private func onReject(_ s: NSMenuItem) {
-        if let id = s.representedObject as? String { controller?.decide(id: id, .deny) }
+        if let id = s.representedObject as? String { controller?.reject(id: id) }
     }
     @objc private func onOpenTerminal() { controller?.openTerminal() }
     @objc private func onToggleAuto() {
