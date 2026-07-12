@@ -37,7 +37,7 @@ struct CustomTerminal: TerminalAdapter {
 
 enum Terminals {
     static let builtins: [BuiltinTerminal] = [
-        .init(id: "otty",     name: "Otty",              bundleId: "com.otty.Otty"),
+        .init(id: "otty",     name: "Otty",              bundleId: "io.appmakes.otty"),
         .init(id: "apple",    name: "Terminal.app",      bundleId: "com.apple.Terminal"),
         .init(id: "iterm",    name: "iTerm2",            bundleId: "com.googlecode.iterm2"),
         .init(id: "warp",     name: "Warp",              bundleId: "dev.warp.Warp-Stable"),
