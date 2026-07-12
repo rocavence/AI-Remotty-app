@@ -1,0 +1,105 @@
+import Foundation
+
+/// 安裝/移除 Claude Code 的 PreToolUse hook。
+/// 動 ~/.claude/settings.json 前先備份；merge-append，保留既有 hook（如 Otty 的）。
+enum HookInstaller {
+    static let marker = "remotty-hook.sh"
+
+    static var settingsURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/settings.json")
+    }
+
+    static func isInstalled() -> Bool {
+        guard let dict = readSettings(),
+              let hooks = dict["hooks"] as? [String: Any],
+              let pre = hooks["PreToolUse"] as? [[String: Any]] else { return false }
+        return pre.contains { entry in
+            (entry["hooks"] as? [[String: Any]])?.contains {
+                ($0["command"] as? String)?.contains(marker) ?? false
+            } ?? false
+        }
+    }
+
+    /// 安裝。回傳備份檔路徑（若原本有檔）。
+    @discardableResult
+    static func install(binaryPath: String) throws -> String? {
+        writeWrapper(binaryPath: binaryPath)
+
+        var dict = readSettings() ?? [:]
+        let backup = try backupIfExists()
+
+        var hooks = dict["hooks"] as? [String: Any] ?? [:]
+        var pre = hooks["PreToolUse"] as? [[String: Any]] ?? []
+
+        // 去重
+        pre.removeAll { entry in
+            (entry["hooks"] as? [[String: Any]])?.contains {
+                ($0["command"] as? String)?.contains(marker) ?? false
+            } ?? false
+        }
+        pre.append([
+            "matcher": "*",
+            "hooks": [[
+                "type": "command",
+                "command": Paths.hookScript.path,
+                "timeout": 120,
+            ]],
+        ])
+        hooks["PreToolUse"] = pre
+        dict["hooks"] = hooks
+        try writeSettings(dict)
+        return backup
+    }
+
+    @discardableResult
+    static func uninstall() throws -> Bool {
+        guard var dict = readSettings(),
+              var hooks = dict["hooks"] as? [String: Any],
+              var pre = hooks["PreToolUse"] as? [[String: Any]] else { return false }
+        let before = pre.count
+        pre.removeAll { entry in
+            (entry["hooks"] as? [[String: Any]])?.contains {
+                ($0["command"] as? String)?.contains(marker) ?? false
+            } ?? false
+        }
+        guard pre.count != before else { return false }
+        _ = try? backupIfExists()
+        if pre.isEmpty { hooks.removeValue(forKey: "PreToolUse") } else { hooks["PreToolUse"] = pre }
+        dict["hooks"] = hooks
+        try writeSettings(dict)
+        return true
+    }
+
+    // MARK: 內部
+
+    private static func writeWrapper(binaryPath: String) {
+        let script = """
+        #!/bin/bash
+        # AI-Remotty PreToolUse hook —— 轉交給 app 等 Joy-Con 決策。
+        exec "\(binaryPath)" ask
+        """
+        try? script.write(to: Paths.hookScript, atomically: true, encoding: .utf8)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: Paths.hookScript.path)
+    }
+
+    private static func readSettings() -> [String: Any]? {
+        guard let data = try? Data(contentsOf: settingsURL) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    }
+
+    private static func writeSettings(_ dict: [String: Any]) throws {
+        let data = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
+        try FileManager.default.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: settingsURL, options: .atomic)
+    }
+
+    private static func backupIfExists() throws -> String? {
+        guard FileManager.default.fileExists(atPath: settingsURL.path) else { return nil }
+        let stamp = Int(Date().timeIntervalSince1970)
+        let bak = settingsURL.deletingLastPathComponent()
+            .appendingPathComponent("settings.json.remotty-bak-\(stamp)")
+        try? FileManager.default.copyItem(at: settingsURL, to: bak)
+        return bak.path
+    }
+}
