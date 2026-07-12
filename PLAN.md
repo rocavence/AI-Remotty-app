@@ -57,7 +57,7 @@
 - [ ] 打包 .app（PyInstaller 不適用，走 Configgy 的 SPM build + 自簽流程）
 - [ ] 權限盤點：Bluetooth、Accessibility（模擬鍵入）、Launch at Login
 - [ ] README（中英雙版可後補，先中文）：安裝、配對、hook 安裝、troubleshooting
-- [ ] git 收乾淨、建 GitHub 私有 repo `rocavence/claude-permission-remote`（推之前問使用者要私有還公開）
+- [ ] git 收乾淨、建 GitHub 私有 repo `rocavence/AI-Remotty-app`（推之前問使用者要私有還公開）
 - 驗收：關掉重開 app、重配 Joy-Con、跑一次完整 approve 流程
 
 ## 鐵則

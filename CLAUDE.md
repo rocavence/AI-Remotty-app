@@ -1,4 +1,4 @@
-# Claude Permission Remote
+# AI-Remotty-app（Claude Permission Remote）
 
 macOS menubar app：用 Nintendo Joy-Con (L) 當 Claude Code permission 遙控器——AI 要確認時 Joy-Con 震動、按 A 批准 B 拒絕，免切視窗。
 
