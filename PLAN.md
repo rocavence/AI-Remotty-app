@@ -22,10 +22,12 @@
 
 ## Phases
 
-### Phase 0 — Spike（先驗證再蓋房子）
-- [ ] Joy-Con spike：GCController 抓 Joy-Con (L)、讀按鍵、觸發震動 → `docs/spike-joycon.md`
-- [ ] Provider spike：hooks 路線 A/B 實測（真開一個 Claude Code session 觸發 permission）→ `docs/spike-provider.md`
-- 驗收：兩份 spike 筆記寫明「MVP 採用路線＋理由＋坑」。**兩個 spike 有任一死路要先回報使用者再繼續。**
+### Phase 0 — Spike（先驗證再蓋房子）— ✅ 完成 2026-07-13
+- [x] Joy-Con spike：GCController 抓 Joy-Con (L)、讀按鍵、觸發震動 → `docs/spike-joycon.md`
+      **結果**：全綠。GCController 直認 Joy-Con (L) 免 IOKit；按鍵走 `physicalInputProfile.buttons`（microGamepad 別名有 bug）；震動須用 `hapticContinuous`（transient 是 no-op），三段實際樣式使用者實測有感。
+- [x] Provider spike：hooks 路線實測 → `docs/spike-provider.md`
+      **結果**：MVP 走 `PreToolUse` 阻塞式 hook，stdout 回 `permissionDecision` allow/deny/ask，預設 timeout 600s；stdin 帶 session_id+cwd 可路由多 session。逾時前回 `ask` 當安全 fallback。⚠️ 文件仍要對當前 CC 版本實測 4 點（見 doc 末）。
+- 驗收：✅ 兩份筆記完成，MVP 路線＋理由＋坑齊。無死路。
 
 ### Phase 1 — App scaffold
 - [ ] SPM 專案（照 Configgy 結構）：menubar app + 同 binary CLI 入口
