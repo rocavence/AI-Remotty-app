@@ -62,20 +62,22 @@ open /Applications/AI-Remotty.app
 
 垂直拿 L Joy-Con（直握）。
 
+垂直拿 L Joy-Con（直握）。
+
 | 實體鍵 | 動作 |
 |----|------|
-| 面板 右 → | Enter（確認目前選項；切到對的 tab 再送）|
+| 面板 右 → | Enter（確認目前選項）|
 | 面板 左 ← | Esc |
-| 面板 上 ↑ | 切上一個 tab（⌘⇧[）|
-| 面板 下 ↓ | 切下一個 tab（⌘⇧]）|
+| 面板 上 ↑ | 切上一個 tab（⌘⇧[），切完點回輸入區 |
+| 面板 下 ↓ | 切下一個 tab（⌘⇧]），切完點回輸入區 |
 | **蘑菇頭 ↑↓←→** | 方向鍵（選項導航，已做垂直拿方位校正）|
-| **L 肩鍵** | 打「go on」+ Enter |
-| − / Menu | 開啟選定的 Terminal |
-| □ Capture | 切換 Auto Approve |
+| **−（Menu）** | 打「go on」+ Enter |
 
-**多 tab**：Approve 會用 permission 的 cwd 精準切到對的 Otty tab 再送 Enter（不盲送前景）。也可先用面板上/下手動切 tab。
+開啟 Terminal / 切換 Auto Approve → 走選單列。
 
-**多選項 / 多選清單**：Claude 給 1/2/3/4 或多選時，用**蘑菇頭**移動選項、面板右鍵 Enter 確認。（單 Joy-Con 蘑菇頭「按下 L3」macOS 沒暴露。）
+**⚠️ 單 Joy-Con (L) 只有面板 A/B/X/Y、蘑菇頭、−(Menu) 會觸發**；肩鍵 L/ZL/SL/SR、□(Capture)、蘑菇頭按下(L3) 在 macOS GameController 都不 fire（硬體/驅動限制）。
+
+**多選項 / 多選清單**：Claude 給 1/2/3/4 或多選時，用**蘑菇頭**移動選項、面板右鍵 Enter 確認、− 打「go on」催進度。
 
 ### Hook 安裝做了什麼
 

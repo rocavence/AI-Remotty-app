@@ -27,6 +27,15 @@ enum KeySim {
     static func arrowRight() { postKeycode(124) }
     static func space()      { postKeycode(49) }
 
+    /// 在指定全域座標點一下（左鍵）——切 tab 後把 focus 帶回終端輸入區。
+    static func click(_ p: CGPoint) {
+        for type in [CGEventType.leftMouseDown, .leftMouseUp] {
+            CGEvent(mouseEventSource: src, mouseType: type, mouseCursorPosition: p, mouseButton: .left)?
+                .post(tap: .cghidEventTap)
+        }
+        usleep(8_000)
+    }
+
     private static func postUnicode(_ ch: UniChar) {
         var c = ch
         for down in [true, false] {

@@ -160,6 +160,12 @@ final class AppController: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             guard AXHelper.frontmostBundleId == terminal.bundleId else { return }
             if next { KeySim.nextTab() } else { KeySim.prevTab() }
+            // 切完把 focus 帶回輸入區：在視窗底部點一下
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                if let f = AXHelper.frontmostWindowFrame() {
+                    KeySim.click(CGPoint(x: f.midX, y: f.maxY - 24))
+                }
+            }
         }
     }
 

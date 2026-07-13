@@ -12,20 +12,21 @@ final class AppSettings {
         case approve, reject, tabPrev, tabNext, openTerminal, toggleAuto
         case navUp, navDown, navLeft, navRight, goOn
     }
+    // ⚠️ 單 Joy-Con (L) 只有這些鍵會 fire：面板 A/B/X/Y、Direction Pad(蘑菇頭)、Button Menu(−)。
+    // 肩鍵 L/ZL/SL/SR 與 Button Home(□) 不觸發（GCController 列了但按下無事件）。
     private static let defaultMapping: [String: String] = [
         Action.approve.rawValue: "Button Y",      // 面板 右 → Enter
         Action.reject.rawValue: "Button A",       // 面板 左 → Esc
         Action.tabPrev.rawValue: "Button B",      // 面板 上 ↑  切上一個 tab
         Action.tabNext.rawValue: "Button X",      // 面板 下 ↓  切下一個 tab
-        Action.openTerminal.rawValue: "Button Menu", // − / Menu
-        Action.toggleAuto.rawValue: "Button Home",   // □ Capture
+        Action.goOn.rawValue: "Button Menu",      // − → 打 "go on" + Enter
         // 蘑菇頭（Direction Pad）→ 方向鍵。垂直拿逆時針 90° 校正：
         // 實體上=DP Left、實體右=DP Up、實體下=DP Right、實體左=DP Down
         Action.navUp.rawValue: "Direction Pad Left",
         Action.navRight.rawValue: "Direction Pad Up",
         Action.navDown.rawValue: "Direction Pad Right",
         Action.navLeft.rawValue: "Direction Pad Down",
-        Action.goOn.rawValue: "Left Shoulder",       // L → 打 "go on" + Enter
+        // openTerminal / toggleAuto 沒有可用實體鍵 → 走選單（□ Home 不 fire）
     ]
 
     /// 按鍵名 → 人看得懂的箭頭標籤。

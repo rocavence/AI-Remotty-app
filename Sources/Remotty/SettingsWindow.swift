@@ -59,7 +59,9 @@ struct SettingsView: View {
                     .onChange(of: rumble) { _, v in AppSettings.shared.rumbleEnabled = v }
                 VStack(alignment: .leading, spacing: 3) {
                     Text("面板鍵：右 →=Enter（確認）· 左 ←=Esc · 上 ↑=上一個 tab · 下 ↓=下一個 tab")
-                    Text("蘑菇頭=方向鍵（垂直拿，選項導航）· L 肩鍵=打「go on」+Enter · −=開 Terminal")
+                    Text("蘑菇頭=方向鍵（垂直拿，選項導航）· −=打「go on」+Enter")
+                    Text("⚠️ 單 Joy-Con 肩鍵 L/ZL 與 □ 不觸發；開 Terminal / Auto Approve 走選單")
+                        .foregroundStyle(.orange)
                 }
                 .font(.caption).foregroundStyle(.secondary)
 
