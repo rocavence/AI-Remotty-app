@@ -64,9 +64,21 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     /// 切到 terminal → 模擬鍵入回答原生 prompt。approve=打「1 ↵」、reject=Esc。
     private func answer(_ req: PermissionRequest, approve: Bool) {
-        Terminals.current().activate()
-        // 等視窗真的到最前再送鍵，避免打到別的 app
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        // 沒 Accessibility 權限 → 擋住、開面板（模擬鍵入會靜默失敗）
+        guard AXHelper.isTrusted else {
+            AXHelper.openSettings()
+            NSApp.activate(ignoringOtherApps: true)
+            return  // 不移除 queue，權限好了可再按
+        }
+        let terminal = Terminals.current()
+        terminal.activate()
+        // 等視窗真的到最前再送鍵
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            // 防呆：前景必須是目標 terminal，否則中止（避免打到別的 app / 別的 Space）
+            guard AXHelper.frontmostBundleId == terminal.bundleId else {
+                self?.joycon.buzzReminder()   // 提示沒送出
+                return
+            }
             if approve {
                 KeySim.type("1"); KeySim.pressReturn()
             } else {

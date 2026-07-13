@@ -37,6 +37,16 @@ open /Applications/AI-Remotty.app
 
 首次啟動會開設定視窗：選你的 Terminal、按「安裝 Hook」。
 
+### 授予 Accessibility 權限（模擬鍵入必需）
+
+回答原生 prompt 靠模擬鍵入，需要 Accessibility：
+
+1. 系統設定 → 隱私權與安全性 → 輔助使用
+2. 加入 `/Applications/AI-Remotty.app` 並打勾
+3. **在選單列 Quit 一次 AI-Remotty 再重開**（TCC 權限要重啟才生效）
+
+沒授權時：選單列會顯示「⚠️ 需要 Accessibility 權限」，且按鍵不會亂送（會擋住並開設定面板）。
+
 ## 設定
 
 選單列圖示 →「設定…」：
@@ -69,6 +79,9 @@ open /Applications/AI-Remotty.app
 ## 安全設計
 
 - **Auto Approve 預設關**。
+- **送鍵前確認前景是目標 terminal**：activate 後若最前景 app 不是選定的 terminal（例如你切到別的 Space / 別的 app），中止送鍵並震動提示，不會把按鍵打到別處。
+- **沒 Accessibility 權限時擋住**：不會靜默失敗或亂打字，改開設定面板。
+- **只在有 pending 時送鍵**：queue 空時按鍵不做事；pending 過久自動清除。
 - Joy-Con 沒回應時，逼近 hook timeout（預設 120s）前會自動回 `ask` —— 退回 Claude Code 原生 prompt，**不誤放行也不誤擋**。
 - app 沒在跑時，hook 直接回 `ask`（照常跳原生 prompt），不會卡住 Claude Code。
 - enterprise/managed 的 deny 規則永遠優先，`allow` 蓋不過（Claude Code 行為）。

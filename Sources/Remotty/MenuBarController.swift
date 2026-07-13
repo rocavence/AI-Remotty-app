@@ -31,6 +31,14 @@ final class MenuBarController {
         menu.addItem(disabled(status))
         let jc = joyconConnected ? "🎮 Joy-Con 已連線" : "⚪️ Joy-Con 未連線"
         menu.addItem(disabled(jc))
+
+        // Accessibility 未授權警告（模擬鍵入必需）
+        if !AXHelper.isTrusted {
+            let warn = NSMenuItem(title: "⚠️ 需要 Accessibility 權限 → 點此設定",
+                                  action: #selector(onOpenAX), keyEquivalent: "")
+            warn.target = self
+            menu.addItem(warn)
+        }
         menu.addItem(.separator())
 
         // Pending 清單
@@ -85,6 +93,7 @@ final class MenuBarController {
         if let id = s.representedObject as? String { controller?.reject(id: id) }
     }
     @objc private func onOpenTerminal() { controller?.openTerminal() }
+    @objc private func onOpenAX() { AXHelper.openSettings() }
     @objc private func onToggleAuto() {
         AppSettings.shared.autoApprove.toggle(); controller?.refresh()
     }
