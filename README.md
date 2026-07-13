@@ -60,20 +60,22 @@ open /Applications/AI-Remotty.app
 
 左 Joy-Con 的四顆方向鍵（GCController 實際回報成 Button B/Y/X/A）：
 
+垂直拿 L Joy-Con（直握）。
+
 | 實體鍵 | 動作 |
 |----|------|
-| 右 → | Approve（切到 terminal + 打「1 ↵」）|
-| 左 ← | Reject（Esc）|
-| 上 ↑ | 切上一個 tab（⌘⇧[）|
-| 下 ↓ | 切下一個 tab（⌘⇧]）|
+| 面板 右 → | Enter（確認目前選項；切到對的 tab 再送）|
+| 面板 左 ← | Esc |
+| 面板 上 ↑ | 切上一個 tab（⌘⇧[）|
+| 面板 下 ↓ | 切下一個 tab（⌘⇧]）|
+| **蘑菇頭 ↑↓←→** | 方向鍵（選項導航，已做垂直拿方位校正）|
+| **L 肩鍵** | 打「go on」+ Enter |
 | − / Menu | 開啟選定的 Terminal |
 | □ Capture | 切換 Auto Approve |
-| **蘑菇頭 ↑↓←→** | 方向鍵（Claude 多選項/多選清單導航）|
-| **L 肩鍵** | 空白鍵（多選 toggle）|
 
-**多 tab 用法**：震動後先用上/下切到 pending 所在的 tab（看到 prompt），再按右鍵放行。避免打到錯 tab。
+**多 tab**：Approve 會用 permission 的 cwd 精準切到對的 Otty tab 再送 Enter（不盲送前景）。也可先用面板上/下手動切 tab。
 
-**多選項 / 多選清單**：Claude 給 1/2/3/4 或多選時，用**蘑菇頭**上下移動選項、**L 肩鍵**空白鍵勾選、右鍵 Enter 確認。（單 Joy-Con 的蘑菇頭「按下」macOS 沒暴露，所以空白鍵改綁 L 肩鍵。）
+**多選項 / 多選清單**：Claude 給 1/2/3/4 或多選時，用**蘑菇頭**移動選項、面板右鍵 Enter 確認。（單 Joy-Con 蘑菇頭「按下 L3」macOS 沒暴露。）
 
 ### Hook 安裝做了什麼
 

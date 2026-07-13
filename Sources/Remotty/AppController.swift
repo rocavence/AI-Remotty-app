@@ -131,8 +131,8 @@ final class AppController: NSObject, NSApplicationDelegate {
             joycon.buzzReminder()
             return false
         }
-        if approve { KeySim.type("1"); KeySim.pressReturn() }
-        else { KeySim.pressEscape() }
+        if approve { KeySim.pressReturn() }   // 右鍵 = Enter（確認目前選項）
+        else { KeySim.pressEscape() }          // 左鍵 = Esc
         Log.write("  送鍵完成 approve=\(approve)")
         return true
     }
@@ -182,7 +182,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         case .navDown:  sendNav { KeySim.arrowDown() }
         case .navLeft:  sendNav { KeySim.arrowLeft() }
         case .navRight: sendNav { KeySim.arrowRight() }
-        case .navSpace: sendNav { KeySim.space() }
+        case .goOn:     sendNav { KeySim.type("go on"); KeySim.pressReturn() }
         case .openTerminal:
             Terminals.current().activate()
         case .toggleAuto:
