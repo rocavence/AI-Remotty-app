@@ -20,6 +20,13 @@ enum KeySim {
     static func prevTab() { postKeycode(33, flags: [.maskCommand, .maskShift]) } // [
     static func nextTab() { postKeycode(30, flags: [.maskCommand, .maskShift]) } // ]
 
+    // 方向鍵 + 空白鍵（給 Claude 多選項/多選清單導航）
+    static func arrowUp()    { postKeycode(126) }
+    static func arrowDown()  { postKeycode(125) }
+    static func arrowLeft()  { postKeycode(123) }
+    static func arrowRight() { postKeycode(124) }
+    static func space()      { postKeycode(49) }
+
     private static func postUnicode(_ ch: UniChar) {
         var c = ch
         for down in [true, false] {

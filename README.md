@@ -68,8 +68,12 @@ open /Applications/AI-Remotty.app
 | 下 ↓ | 切下一個 tab（⌘⇧]）|
 | − / Menu | 開啟選定的 Terminal |
 | □ Capture | 切換 Auto Approve |
+| **蘑菇頭 ↑↓←→** | 方向鍵（Claude 多選項/多選清單導航）|
+| **L 肩鍵** | 空白鍵（多選 toggle）|
 
 **多 tab 用法**：震動後先用上/下切到 pending 所在的 tab（看到 prompt），再按右鍵放行。避免打到錯 tab。
+
+**多選項 / 多選清單**：Claude 給 1/2/3/4 或多選時，用**蘑菇頭**上下移動選項、**L 肩鍵**空白鍵勾選、右鍵 Enter 確認。（單 Joy-Con 的蘑菇頭「按下」macOS 沒暴露，所以空白鍵改綁 L 肩鍵。）
 
 ### Hook 安裝做了什麼
 

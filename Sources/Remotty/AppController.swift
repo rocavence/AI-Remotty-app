@@ -100,6 +100,21 @@ final class AppController: NSObject, NSApplicationDelegate {
         remove(req.id, buzz: true)
     }
 
+    /// 導航鍵（方向鍵/空白）→ terminal。前景已是 terminal 就即時送（流暢）；否則先切再送。
+    private func sendNav(_ key: @escaping () -> Void) {
+        guard AXHelper.isTrusted else { AXHelper.openSettings(); return }
+        let terminal = Terminals.current()
+        if AXHelper.frontmostBundleId == terminal.bundleId {
+            key()   // 已在前景，直接送，導航才流暢
+            return
+        }
+        terminal.activate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            guard AXHelper.frontmostBundleId == terminal.bundleId else { return }
+            key()
+        }
+    }
+
     /// 切 terminal tab（⌘⇧[ / ⌘⇧]）。讓使用者先切到 pending 所在的 tab 再 approve。
     private func switchTab(next: Bool) {
         guard AXHelper.isTrusted else { AXHelper.openSettings(); return }
@@ -126,6 +141,11 @@ final class AppController: NSObject, NSApplicationDelegate {
             if let r = front { answer(r, approve: false) } else { hud?.show(text: "沒有待處理", ok: false) }
         case .tabPrev: switchTab(next: false)
         case .tabNext: switchTab(next: true)
+        case .navUp:    sendNav { KeySim.arrowUp() }
+        case .navDown:  sendNav { KeySim.arrowDown() }
+        case .navLeft:  sendNav { KeySim.arrowLeft() }
+        case .navRight: sendNav { KeySim.arrowRight() }
+        case .navSpace: sendNav { KeySim.space() }
         case .openTerminal:
             Terminals.current().activate()
         case .toggleAuto:

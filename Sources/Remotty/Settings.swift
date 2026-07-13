@@ -6,16 +6,25 @@ final class AppSettings {
     private let d = UserDefaults(suiteName: "com.rocavence.remotty") ?? .standard
 
     // 按鍵映射：動作 → GameController 按鍵名。
-    // Joy-Con (L) 實體箭頭 → GCController（實測）：上=Button B 右=Button Y 下=Button X 左=Button A。
-    // 預設：右=approve、左=reject、上=上一個 tab、下=下一個 tab。
-    enum Action: String, CaseIterable { case approve, reject, tabPrev, tabNext, openTerminal, toggleAuto }
+    // Joy-Con (L) 實測：面板四箭頭鍵=Button B/Y/X/A（上/右/下/左）；蘑菇頭=Direction Pad；L=Left Shoulder。
+    // 面板鍵：右=approve 左=reject 上=上一個tab 下=下一個tab；蘑菇頭=方向鍵導航；L=空白鍵。
+    enum Action: String, CaseIterable {
+        case approve, reject, tabPrev, tabNext, openTerminal, toggleAuto
+        case navUp, navDown, navLeft, navRight, navSpace
+    }
     private static let defaultMapping: [String: String] = [
-        Action.approve.rawValue: "Button Y",      // 右 →
-        Action.reject.rawValue: "Button A",       // 左 ←
-        Action.tabPrev.rawValue: "Button B",      // 上 ↑  切上一個 tab
-        Action.tabNext.rawValue: "Button X",      // 下 ↓  切下一個 tab
+        Action.approve.rawValue: "Button Y",      // 面板 右 →
+        Action.reject.rawValue: "Button A",       // 面板 左 ←
+        Action.tabPrev.rawValue: "Button B",      // 面板 上 ↑  切上一個 tab
+        Action.tabNext.rawValue: "Button X",      // 面板 下 ↓  切下一個 tab
         Action.openTerminal.rawValue: "Button Menu", // − / Menu
         Action.toggleAuto.rawValue: "Button Home",   // □ Capture
+        // 蘑菇頭（Direction Pad）→ 方向鍵；L 肩鍵 → 空白鍵
+        Action.navUp.rawValue: "Direction Pad Up",
+        Action.navDown.rawValue: "Direction Pad Down",
+        Action.navLeft.rawValue: "Direction Pad Left",
+        Action.navRight.rawValue: "Direction Pad Right",
+        Action.navSpace.rawValue: "Left Shoulder",
     ]
 
     /// 按鍵名 → 人看得懂的箭頭標籤。
@@ -27,8 +36,12 @@ final class AppSettings {
         case "Button A": return "左 ←"
         case "Button Menu": return "− / Menu"
         case "Button Home": return "□ Capture"
-        case "Left Shoulder": return "L"
-        case "Right Shoulder": return "ZL"
+        case "Left Shoulder": return "L 肩鍵"
+        case "Right Shoulder": return "ZL 肩鍵"
+        case "Direction Pad Up": return "蘑菇頭 ↑"
+        case "Direction Pad Down": return "蘑菇頭 ↓"
+        case "Direction Pad Left": return "蘑菇頭 ←"
+        case "Direction Pad Right": return "蘑菇頭 →"
         default: return name
         }
     }
