@@ -62,11 +62,14 @@ open /Applications/AI-Remotty.app
 
 | 實體鍵 | 動作 |
 |----|------|
-| 上 ↑ | Approve（放行最前一筆）|
-| 下 ↓ | Reject |
-| 右 → | Skip（退回 Claude Code 原生 prompt）|
-| 左 ← | 開啟選定的 Terminal |
-| − / Menu | 切換 Auto Approve |
+| 右 → | Approve（切到 terminal + 打「1 ↵」）|
+| 左 ← | Reject（Esc）|
+| 上 ↑ | 切上一個 tab（⌘⇧[）|
+| 下 ↓ | 切下一個 tab（⌘⇧]）|
+| − / Menu | 開啟選定的 Terminal |
+| □ Capture | 切換 Auto Approve |
+
+**多 tab 用法**：震動後先用上/下切到 pending 所在的 tab（看到 prompt），再按右鍵放行。避免打到錯 tab。
 
 ### Hook 安裝做了什麼
 

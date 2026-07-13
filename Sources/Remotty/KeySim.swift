@@ -16,6 +16,10 @@ enum KeySim {
     static func pressReturn() { postKeycode(36) }   // Return
     static func pressEscape() { postKeycode(53) }   // Esc
 
+    // Otty/多數 macOS terminal 切 tab：⌘⇧[ 上一個 / ⌘⇧] 下一個
+    static func prevTab() { postKeycode(33, flags: [.maskCommand, .maskShift]) } // [
+    static func nextTab() { postKeycode(30, flags: [.maskCommand, .maskShift]) } // ]
+
     private static func postUnicode(_ ch: UniChar) {
         var c = ch
         for down in [true, false] {
@@ -26,9 +30,11 @@ enum KeySim {
         usleep(8_000)
     }
 
-    private static func postKeycode(_ key: CGKeyCode) {
+    private static func postKeycode(_ key: CGKeyCode, flags: CGEventFlags = []) {
         for down in [true, false] {
-            CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: down)?.post(tap: .cghidEventTap)
+            let e = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: down)
+            if !flags.isEmpty { e?.flags = flags }
+            e?.post(tap: .cghidEventTap)
         }
         usleep(8_000)
     }

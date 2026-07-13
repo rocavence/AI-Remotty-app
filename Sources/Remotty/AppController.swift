@@ -98,6 +98,17 @@ final class AppController: NSObject, NSApplicationDelegate {
         remove(req.id, buzz: true)
     }
 
+    /// 切 terminal tab（⌘⇧[ / ⌘⇧]）。讓使用者先切到 pending 所在的 tab 再 approve。
+    private func switchTab(next: Bool) {
+        guard AXHelper.isTrusted else { AXHelper.openSettings(); return }
+        let terminal = Terminals.current()
+        terminal.activate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            guard AXHelper.frontmostBundleId == terminal.bundleId else { return }
+            if next { KeySim.nextTab() } else { KeySim.prevTab() }
+        }
+    }
+
     // 給選單用（指定 id）
     func approve(id: String) { if let r = queue.first(where: { $0.id == id }) { answer(r, approve: true) } }
     func reject(id: String)  { if let r = queue.first(where: { $0.id == id }) { answer(r, approve: false) } }
@@ -111,8 +122,8 @@ final class AppController: NSObject, NSApplicationDelegate {
             if let r = front { answer(r, approve: true) } else { hud?.show(text: "沒有待處理", ok: false) }
         case .reject:
             if let r = front { answer(r, approve: false) } else { hud?.show(text: "沒有待處理", ok: false) }
-        case .skip:
-            if let r = front { remove(r.id, buzz: false); hud?.show(text: "跳過", ok: false) }
+        case .tabPrev: switchTab(next: false)
+        case .tabNext: switchTab(next: true)
         case .openTerminal:
             Terminals.current().activate()
         case .toggleAuto:

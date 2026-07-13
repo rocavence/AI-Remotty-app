@@ -54,17 +54,24 @@ enum HookInstaller {
     @discardableResult
     static func uninstall() throws -> Bool {
         guard var dict = readSettings(),
-              var hooks = dict["hooks"] as? [String: Any],
-              var pre = hooks[event] as? [[String: Any]] else { return false }
-        let before = pre.count
-        pre.removeAll { entry in
-            (entry["hooks"] as? [[String: Any]])?.contains {
-                ($0["command"] as? String)?.contains(marker) ?? false
-            } ?? false
+              var hooks = dict["hooks"] as? [String: Any] else { return false }
+        var changed = false
+        // 清所有 event 裡的 remotty hook（防呆：舊版曾裝在 PreToolUse）
+        for ev in Array(hooks.keys) {
+            guard var arr = hooks[ev] as? [[String: Any]] else { continue }
+            let before = arr.count
+            arr.removeAll { entry in
+                (entry["hooks"] as? [[String: Any]])?.contains {
+                    ($0["command"] as? String)?.contains(marker) ?? false
+                } ?? false
+            }
+            if arr.count != before {
+                changed = true
+                if arr.isEmpty { hooks.removeValue(forKey: ev) } else { hooks[ev] = arr }
+            }
         }
-        guard pre.count != before else { return false }
+        guard changed else { return false }
         _ = try? backupIfExists()
-        if pre.isEmpty { hooks.removeValue(forKey: event) } else { hooks[event] = pre }
         dict["hooks"] = hooks
         try writeSettings(dict)
         return true

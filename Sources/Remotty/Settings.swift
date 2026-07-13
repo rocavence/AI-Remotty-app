@@ -7,14 +7,15 @@ final class AppSettings {
 
     // 按鍵映射：動作 → GameController 按鍵名。
     // Joy-Con (L) 實體箭頭 → GCController（實測）：上=Button B 右=Button Y 下=Button X 左=Button A。
-    // 預設：右=approve、左=reject、上=開 terminal、下=skip。
-    enum Action: String, CaseIterable { case approve, reject, skip, openTerminal, toggleAuto }
+    // 預設：右=approve、左=reject、上=上一個 tab、下=下一個 tab。
+    enum Action: String, CaseIterable { case approve, reject, tabPrev, tabNext, openTerminal, toggleAuto }
     private static let defaultMapping: [String: String] = [
         Action.approve.rawValue: "Button Y",      // 右 →
         Action.reject.rawValue: "Button A",       // 左 ←
-        Action.openTerminal.rawValue: "Button B", // 上 ↑
-        Action.skip.rawValue: "Button X",         // 下 ↓
-        Action.toggleAuto.rawValue: "Button Menu",// − / Menu
+        Action.tabPrev.rawValue: "Button B",      // 上 ↑  切上一個 tab
+        Action.tabNext.rawValue: "Button X",      // 下 ↓  切下一個 tab
+        Action.openTerminal.rawValue: "Button Menu", // − / Menu
+        Action.toggleAuto.rawValue: "Button Home",   // □ Capture
     ]
 
     /// 按鍵名 → 人看得懂的箭頭標籤。
