@@ -180,14 +180,15 @@ final class AppController: NSObject, NSApplicationDelegate {
             hud?.show(text: "Esc", ok: false)
             sendNav { KeySim.pressEscape() }
             if let r = front { remove(r.id, buzz: false) }
-        case .tabPrev: switchTab(next: false)
-        case .tabNext: switchTab(next: true)
-        case .navUp:    sendNav { KeySim.arrowUp() }
-        case .navDown:  sendNav { KeySim.arrowDown() }
-        case .navLeft:  sendNav { KeySim.arrowLeft() }
-        case .navRight: sendNav { KeySim.arrowRight() }
-        case .goOn:     sendNav { KeySim.type("go on"); KeySim.pressReturn() }
+        case .tabPrev: hud?.show(text: "◀ 上一個 tab", ok: true); switchTab(next: false)
+        case .tabNext: hud?.show(text: "下一個 tab ▶", ok: true); switchTab(next: true)
+        case .navUp:    hud?.show(text: "↑", ok: true); sendNav { KeySim.arrowUp() }
+        case .navDown:  hud?.show(text: "↓", ok: true); sendNav { KeySim.arrowDown() }
+        case .navLeft:  hud?.show(text: "←", ok: true); sendNav { KeySim.arrowLeft() }
+        case .navRight: hud?.show(text: "→", ok: true); sendNav { KeySim.arrowRight() }
+        case .goOn:     hud?.show(text: "go on ⏎", ok: true); sendNav { KeySim.type("go on"); KeySim.pressReturn() }
         case .openTerminal:
+            hud?.show(text: "開啟 Terminal", ok: true)
             Terminals.current().activate()
         case .toggleAuto:
             AppSettings.shared.autoApprove.toggle()
