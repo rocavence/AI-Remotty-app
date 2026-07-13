@@ -173,9 +173,13 @@ final class AppController: NSObject, NSApplicationDelegate {
         Log.write("handle \(action.rawValue) queue=\(queue.count) front=\(front?.id ?? "nil")")
         switch action {
         case .approve:
-            if let r = front { answer(r, approve: true) } else { hud?.show(text: "沒有待處理", ok: false) }
+            hud?.show(text: "Enter", ok: true)
+            sendNav { KeySim.pressReturn() }   // 右鍵直接送 Enter 到前景 terminal
+            if let r = front { remove(r.id, buzz: false) }
         case .reject:
-            if let r = front { answer(r, approve: false) } else { hud?.show(text: "沒有待處理", ok: false) }
+            hud?.show(text: "Esc", ok: false)
+            sendNav { KeySim.pressEscape() }
+            if let r = front { remove(r.id, buzz: false) }
         case .tabPrev: switchTab(next: false)
         case .tabNext: switchTab(next: true)
         case .navUp:    sendNav { KeySim.arrowUp() }
