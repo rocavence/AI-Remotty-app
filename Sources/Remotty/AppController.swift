@@ -43,6 +43,11 @@ final class AppController: NSObject, NSApplicationDelegate {
     // MARK: Queue
 
     private func enqueue(_ req: PermissionRequest) {
+        // 同一 session 一次只會有一個權限停頓 → 新的來就清掉該 session 的舊 pending（已決策的）
+        if let old = queue.first(where: { $0.sessionId == req.sessionId && !req.sessionId.isEmpty }) {
+            Log.write("清除同 session 舊 pending \(old.id)")
+            remove(old.id, buzz: false)
+        }
         queue.append(req)
         joycon.buzzNewRequest()
         scheduleReminder(req)
@@ -66,38 +71,70 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var front: PermissionRequest? { queue.first }
 
     /// 切到 terminal → 模擬鍵入回答原生 prompt。approve=打「1 ↵」、reject=Esc。
+    private var inFlight = Set<String>()   // 正在處理的 req id → 防同一決策送兩次
+
     private func answer(_ req: PermissionRequest, approve: Bool) {
-        Log.write("answer approve=\(approve) req=\(req.id) trusted=\(AXHelper.isTrusted)")
+        Log.write("answer approve=\(approve) req=\(req.id) cwd=\(req.cwd) trusted=\(AXHelper.isTrusted)")
+        guard !inFlight.contains(req.id) else { Log.write("  略過：已在處理中"); return }
         // 沒 Accessibility 權限 → 擋住、開面板（模擬鍵入會靜默失敗）
         guard AXHelper.isTrusted else {
             Log.write("  擋下：無 Accessibility 權限")
             hud?.show(text: "需要 Accessibility 權限", ok: false)
             AXHelper.openSettings()
             NSApp.activate(ignoringOtherApps: true)
-            return  // 不移除 queue，權限好了可再按
+            return  // 不標 inFlight，授權後可再按
         }
+        inFlight.insert(req.id)
         let terminal = Terminals.current()
-        terminal.activate()
-        // 等視窗真的到最前再送鍵
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-            let front = AXHelper.frontmostBundleId
-            Log.write("  activate \(terminal.name)(\(terminal.bundleId)) 後 前景=\(front ?? "nil")")
-            // 防呆：前景必須是目標 terminal，否則中止（避免打到別的 app / 別的 Space）
-            guard front == terminal.bundleId else {
-                Log.write("  中止送鍵：前景不是目標 terminal")
-                self?.hud?.show(text: "前景不是 \(terminal.name)，沒送出", ok: false)
-                self?.joycon.buzzReminder()   // 提示沒送出
-                return
-            }
-            if approve {
-                KeySim.type("1"); KeySim.pressReturn()
-            } else {
-                KeySim.pressEscape()
-            }
-            Log.write("  送鍵完成 approve=\(approve)")
+        let finish: (Bool) -> Void = { [weak self] sent in
+            guard let self else { return }
+            if sent { self.remove(req.id, buzz: true) }  // 只在真的送出後才清（＝決策做完）
+            self.inFlight.remove(req.id)
         }
+
+        // Otty：依 cwd 精準切到對的 tab（跨視窗查詢後再送鍵）
+        if terminal.id == "otty" {
+            DispatchQueue.global().async { [weak self] in
+                let tabs = OttyControl.tabs()
+                let matched = OttyControl.selectTab(cwd: req.cwd)
+                Log.write("  Otty \(tabs.count) tabs，cwd 對到 tab=\(matched)")
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    let dir = (req.cwd as NSString).lastPathComponent
+                    self.hud?.show(text: matched ? "Otty(\(tabs.count)) → \(dir)" : "Otty(\(tabs.count)) 沒對到 tab",
+                                   ok: matched)
+                    guard matched else { self.joycon.buzzReminder(); finish(false); return }
+                    let sent = self.sendAnswerKeys(approve: approve, terminal: terminal)
+                    finish(sent)
+                }
+            }
+            return
+        }
+
+        // 其他 terminal：activate 到前景後送鍵（無 tab 精準路由）
+        terminal.activate()
         hud?.show(text: approve ? "✓ Approve" : "✗ Reject", ok: approve)
-        remove(req.id, buzz: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            let sent = self?.sendAnswerKeys(approve: approve, terminal: terminal) ?? false
+            finish(sent)
+        }
+    }
+
+    /// 送出回答鍵。前景必須是目標 terminal，否則中止。回傳是否真的送出。
+    @discardableResult
+    private func sendAnswerKeys(approve: Bool, terminal: TerminalAdapter) -> Bool {
+        let front = AXHelper.frontmostBundleId
+        Log.write("  前景=\(front ?? "nil") 目標=\(terminal.bundleId)")
+        guard front == terminal.bundleId else {
+            Log.write("  中止送鍵：前景不是目標 terminal")
+            hud?.show(text: "前景不是 \(terminal.name)，沒送出", ok: false)
+            joycon.buzzReminder()
+            return false
+        }
+        if approve { KeySim.type("1"); KeySim.pressReturn() }
+        else { KeySim.pressEscape() }
+        Log.write("  送鍵完成 approve=\(approve)")
+        return true
     }
 
     /// 導航鍵（方向鍵/空白）→ terminal。前景已是 terminal 就即時送（流暢）；否則先切再送。
@@ -183,6 +220,14 @@ final class AppController: NSObject, NSApplicationDelegate {
     }
 
     func openTerminal() { Terminals.current().activate() }
+
+    func clearAll() {
+        Log.write("手動清除全部 pending (\(queue.count))")
+        for r in queue { reminderTimers[r.id]?.invalidate(); autoAnswerTimers[r.id]?.invalidate() }
+        reminderTimers.removeAll(); autoAnswerTimers.removeAll()
+        queue.removeAll()
+        refresh()
+    }
 
     private var settingsWindow: SettingsWindowController?
     func showSettings() {

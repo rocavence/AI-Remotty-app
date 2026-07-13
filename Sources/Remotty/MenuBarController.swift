@@ -91,6 +91,11 @@ final class MenuBarController {
         let open = NSMenuItem(title: "開啟 Terminal", action: #selector(onOpenTerminal), keyEquivalent: "")
         open.target = self; menu.addItem(open)
 
+        if !queue.isEmpty {
+            let clear = NSMenuItem(title: "清除全部待處理", action: #selector(onClearAll), keyEquivalent: "")
+            clear.target = self; menu.addItem(clear)
+        }
+
         let auto = NSMenuItem(title: "Auto Approve", action: #selector(onToggleAuto), keyEquivalent: "")
         auto.target = self; auto.state = autoApprove ? .on : .off
         menu.addItem(auto)
@@ -119,6 +124,7 @@ final class MenuBarController {
     }
     @objc private func onOpenTerminal() { controller?.openTerminal() }
     @objc private func onOpenAX() { AXHelper.openSettings() }
+    @objc private func onClearAll() { controller?.clearAll() }
     @objc private func onToggleAuto() {
         AppSettings.shared.autoApprove.toggle(); controller?.refresh()
     }
