@@ -11,16 +11,41 @@ final class MenuBarController {
         update(queue: [], joyconConnected: false, autoApprove: false)
     }
 
+    enum Light { case green, yellow, red }
+
     func update(queue: [PermissionRequest], joyconConnected: Bool, autoApprove: Bool) {
-        // 圖示：Idle 綠、Waiting 紅（用 SF Symbol + 數字）
+        let n = queue.count
+        // 狀態燈：黃=有待確認、紅=尚未設好、綠=就緒
+        let ready = joyconConnected && HookInstaller.isInstalled() && AXHelper.isTrusted
+        let light: Light = n > 0 ? .yellow : (ready ? .green : .red)
         if let btn = item.button {
-            let n = queue.count
-            let symbol = n > 0 ? "bell.badge.fill" : "gamecontroller.fill"
-            btn.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Remotty")
-            btn.image?.isTemplate = true
+            btn.image = Self.trafficLight(light)
+            btn.image?.isTemplate = false
             btn.title = n > 0 ? " \(n)" : ""
         }
         item.menu = buildMenu(queue: queue, joyconConnected: joyconConnected, autoApprove: autoApprove)
+    }
+
+    /// 垂直紅黃綠燈圖示：亮起 active 燈，其餘轉暗。
+    static func trafficLight(_ active: Light) -> NSImage {
+        let w: CGFloat = 11, h: CGFloat = 19, r: CGFloat = 3.4
+        let img = NSImage(size: NSSize(width: w, height: h))
+        img.lockFocus()
+        let cx = w / 2
+        let ys: [CGFloat] = [h - r - 1.5, h / 2, r + 1.5]   // 上紅 中黃 下綠
+        let lights: [Light] = [.red, .yellow, .green]
+        let colors: [Light: NSColor] = [
+            .red: NSColor.systemRed, .yellow: NSColor.systemYellow, .green: NSColor.systemGreen,
+        ]
+        for (i, l) in lights.enumerated() {
+            let on = (l == active)
+            let color = colors[l]!
+            (on ? color : color.withAlphaComponent(0.16)).setFill()
+            let dot = NSBezierPath(ovalIn: NSRect(x: cx - r, y: ys[i] - r, width: r * 2, height: r * 2))
+            dot.fill()
+        }
+        img.unlockFocus()
+        return img
     }
 
     private func buildMenu(queue: [PermissionRequest], joyconConnected: Bool, autoApprove: Bool) -> NSMenu {

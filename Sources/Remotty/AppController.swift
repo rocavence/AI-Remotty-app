@@ -21,6 +21,8 @@ final class AppController: NSObject, NSApplicationDelegate {
         if !AppSettings.shared.onboardingDone {
             DispatchQueue.main.async { [weak self] in self?.showSettings() }
         }
+        // 定期刷新燈號（hook/Accessibility 狀態變了也能反映）
+        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.refresh() }
         refresh()
     }
 
