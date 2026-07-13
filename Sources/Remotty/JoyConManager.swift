@@ -17,6 +17,8 @@ final class JoyConManager {
     private var boundControllers = Set<ObjectIdentifier>()
 
     func start() {
+        // 關鍵：menubar app 永遠非前景，預設收不到 controller 輸入 → 必須開背景監聽。
+        GCController.shouldMonitorBackgroundEvents = true
         GCController.controllers().forEach(bind)
         NotificationCenter.default.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { [weak self] n in
             if let c = n.object as? GCController { self?.bind(c) }
@@ -42,10 +44,13 @@ final class JoyConManager {
 
         // 按鍵：physicalInputProfile.buttons（唯一可靠來源，見 spike）
         let profile = c.physicalInputProfile
+        Log.write("bind \(c.vendorName ?? "?") buttons=\(profile.buttons.keys.sorted())")
         for (name, btn) in profile.buttons {
-            btn.valueChangedHandler = { [weak self] _, _, pressed in
+            btn.pressedChangedHandler = { [weak self] _, _, pressed in
                 guard pressed else { return } // 只在按下瞬間觸發
-                guard let self, let action = AppSettings.shared.action(forButton: name) else { return }
+                let action = AppSettings.shared.action(forButton: name)
+                Log.write("press \(name) → action=\(action.map { $0.rawValue } ?? "無映射")")
+                guard let self, let action else { return }
                 DispatchQueue.main.async { self.onAction?(action) }
             }
         }

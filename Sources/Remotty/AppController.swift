@@ -5,6 +5,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private let provider: PermissionProvider = ClaudeCodeProvider()
     private let joycon = JoyConManager.shared
     private var menu: MenuBarController!
+    private let hud: HUD? = HUD()
     private var reminderTimers: [String: Timer] = [:]
     private var autoAnswerTimers: [String: Timer] = [:]
 
@@ -64,8 +65,11 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     /// 切到 terminal → 模擬鍵入回答原生 prompt。approve=打「1 ↵」、reject=Esc。
     private func answer(_ req: PermissionRequest, approve: Bool) {
+        Log.write("answer approve=\(approve) req=\(req.id) trusted=\(AXHelper.isTrusted)")
         // 沒 Accessibility 權限 → 擋住、開面板（模擬鍵入會靜默失敗）
         guard AXHelper.isTrusted else {
+            Log.write("  擋下：無 Accessibility 權限")
+            hud?.show(text: "需要 Accessibility 權限", ok: false)
             AXHelper.openSettings()
             NSApp.activate(ignoringOtherApps: true)
             return  // 不移除 queue，權限好了可再按
@@ -74,8 +78,12 @@ final class AppController: NSObject, NSApplicationDelegate {
         terminal.activate()
         // 等視窗真的到最前再送鍵
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            let front = AXHelper.frontmostBundleId
+            Log.write("  activate \(terminal.name)(\(terminal.bundleId)) 後 前景=\(front ?? "nil")")
             // 防呆：前景必須是目標 terminal，否則中止（避免打到別的 app / 別的 Space）
-            guard AXHelper.frontmostBundleId == terminal.bundleId else {
+            guard front == terminal.bundleId else {
+                Log.write("  中止送鍵：前景不是目標 terminal")
+                self?.hud?.show(text: "前景不是 \(terminal.name)，沒送出", ok: false)
                 self?.joycon.buzzReminder()   // 提示沒送出
                 return
             }
@@ -84,7 +92,9 @@ final class AppController: NSObject, NSApplicationDelegate {
             } else {
                 KeySim.pressEscape()
             }
+            Log.write("  送鍵完成 approve=\(approve)")
         }
+        hud?.show(text: approve ? "✓ Approve" : "✗ Reject", ok: approve)
         remove(req.id, buzz: true)
     }
 
@@ -95,13 +105,20 @@ final class AppController: NSObject, NSApplicationDelegate {
     // MARK: Joy-Con 動作
 
     private func handle(_ action: AppSettings.Action) {
+        Log.write("handle \(action.rawValue) queue=\(queue.count) front=\(front?.id ?? "nil")")
         switch action {
-        case .approve: if let r = front { answer(r, approve: true) }
-        case .reject:  if let r = front { answer(r, approve: false) }
-        case .skip:    if let r = front { remove(r.id, buzz: false) } // 只從 queue 移除，不動 terminal
-        case .openTerminal: Terminals.current().activate()
+        case .approve:
+            if let r = front { answer(r, approve: true) } else { hud?.show(text: "沒有待處理", ok: false) }
+        case .reject:
+            if let r = front { answer(r, approve: false) } else { hud?.show(text: "沒有待處理", ok: false) }
+        case .skip:
+            if let r = front { remove(r.id, buzz: false); hud?.show(text: "跳過", ok: false) }
+        case .openTerminal:
+            Terminals.current().activate()
         case .toggleAuto:
             AppSettings.shared.autoApprove.toggle()
+            hud?.show(text: AppSettings.shared.autoApprove ? "Auto Approve 開" : "Auto Approve 關",
+                      ok: AppSettings.shared.autoApprove)
             refresh()
         }
     }
