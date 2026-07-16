@@ -15,6 +15,20 @@ final class JoyConManager {
     private(set) var connected = false
     private var engines: [CHHapticEngine] = []
     private var boundControllers = Set<ObjectIdentifier>()
+    private var controllerProfiles: [ObjectIdentifier: String] = [:]  // 每台控制器的 profile
+    private var liveLabels: [String: String] = [:]                    // 按鍵名 → 即時 localizedName
+
+    /// 最近連上的控制器（設定 UI 用）。
+    private(set) var currentProfile = AppSettings.profileStandard
+    private(set) var currentControllerName: String?
+
+    /// 綁定擷取：進 capture 後下一顆按下的鍵回呼該鍵名，不觸發動作。
+    private var onCapture: ((String) -> Void)?
+    func beginCapture(_ cb: @escaping (String) -> Void) { onCapture = cb }
+    func cancelCapture() { onCapture = nil }
+    var isCapturing: Bool { onCapture != nil }
+    /// 某按鍵名的即時人類標籤（來自連線控制器），無則 nil。
+    func liveLabel(_ name: String) -> String? { liveLabels[name] }
 
     func start() {
         // 關鍵：menubar app 永遠非前景，預設收不到 controller 輸入 → 必須開背景監聽。
@@ -24,7 +38,11 @@ final class JoyConManager {
             if let c = n.object as? GCController { self?.bind(c) }
         }
         NotificationCenter.default.addObserver(forName: .GCControllerDidDisconnect, object: nil, queue: .main) { [weak self] n in
-            if let c = n.object as? GCController { self?.boundControllers.remove(ObjectIdentifier(c)) }
+            if let c = n.object as? GCController {
+                let k = ObjectIdentifier(c)
+                self?.boundControllers.remove(k)
+                self?.controllerProfiles.removeValue(forKey: k)
+            }
             self?.updateConnection()
         }
         GCController.startWirelessControllerDiscovery {}
@@ -42,15 +60,30 @@ final class JoyConManager {
             engines.append(eng)
         }
 
-        // 按鍵：physicalInputProfile.buttons（唯一可靠來源，見 spike）
+        let prof = AppSettings.profileId(for: c)
+        controllerProfiles[key] = prof
+        currentProfile = prof
+        currentControllerName = c.vendorName
+
+        // 按鍵：physicalInputProfile.buttons（唯一可靠來源，見 spike）。控制器無關：
+        // Xbox / PS4 / PS5 / PC 手把同走 extendedGamepad 標準鍵名。
         let profile = c.physicalInputProfile
-        Log.write("bind \(c.vendorName ?? "?") buttons=\(profile.buttons.keys.sorted())")
+        Log.write("bind \(c.vendorName ?? "?") profile=\(prof) buttons=\(profile.buttons.keys.sorted())")
         for (name, btn) in profile.buttons {
+            liveLabels[name] = btn.localizedName ?? name
             btn.pressedChangedHandler = { [weak self] _, _, pressed in
                 guard pressed else { return } // 只在按下瞬間觸發
-                let action = AppSettings.shared.action(forButton: name)
-                Log.write("press \(name) → action=\(action.map { $0.rawValue } ?? "無映射")")
-                guard let self, let action else { return }
+                guard let self else { return }
+                // 綁定擷取優先：吃掉這次按下，回報鍵名。
+                if let cb = self.onCapture {
+                    self.onCapture = nil
+                    Log.write("capture \(name)")
+                    DispatchQueue.main.async { cb(name) }
+                    return
+                }
+                let action = AppSettings.shared.action(forButton: name, profile: prof)
+                Log.write("press \(name) [\(prof)] → action=\(action.map { $0.rawValue } ?? "無映射")")
+                guard let action else { return }
                 DispatchQueue.main.async { self.onAction?(action) }
             }
         }

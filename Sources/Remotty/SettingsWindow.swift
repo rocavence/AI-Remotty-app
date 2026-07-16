@@ -31,6 +31,11 @@ struct SettingsView: View {
     @State private var hookInstalled = HookInstaller.isInstalled()
     @State private var status = ""
 
+    // 按鍵綁定
+    @State private var profile = JoyConManager.shared.currentProfile
+    @State private var mapping: [String: String] = [:]
+    @State private var capturing: AppSettings.Action?
+
     private let terminals = Terminals.builtins
 
     var body: some View {
@@ -54,16 +59,35 @@ struct SettingsView: View {
                 }
 
                 Divider()
-                header("Joy-Con")
+                header("控制器按鍵")
                 Toggle("震動提醒", isOn: $rumble)
                     .onChange(of: rumble) { _, v in AppSettings.shared.rumbleEnabled = v }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("面板鍵：右 →=Enter（確認）· 左 ←=Esc · 上 ↑=上一個 tab · 下 ↓=下一個 tab")
-                    Text("蘑菇頭=方向鍵（垂直拿，選項導航）· −=打「go on」+Enter")
-                    Text("⚠️ 單 Joy-Con 肩鍵 L/ZL 與 □ 不觸發；開 Terminal / Auto Approve 走選單")
-                        .foregroundStyle(.orange)
+
+                Picker("設定對象", selection: $profile) {
+                    ForEach(AppSettings.profiles, id: \.self) { p in
+                        Text(AppSettings.profileName(p)).tag(p)
+                    }
                 }
-                .font(.caption).foregroundStyle(.secondary)
+                .onChange(of: profile) { _, _ in reloadMapping() }
+
+                if let cn = JoyConManager.shared.currentControllerName {
+                    Text("已連線：\(cn)").font(.caption).foregroundStyle(.green)
+                } else {
+                    Text("未連線任何控制器（可離線設定，接上對應手把後重新綁定）")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                ForEach(AppSettings.Action.allCases, id: \.self) { a in
+                    bindingRow(a)
+                }
+                Button("恢復此手把預設按鍵") {
+                    AppSettings.shared.resetMapping(profile: profile); reloadMapping()
+                }
+                .font(.caption)
+                if profile == AppSettings.profileJoyCon {
+                    Text("⚠️ 單 Joy-Con 肩鍵 L/ZL 與 □ Capture 不觸發，無法綁定。")
+                        .font(.caption).foregroundStyle(.orange)
+                }
 
                 HStack {
                     Text("提醒間隔")
@@ -103,10 +127,61 @@ struct SettingsView: View {
             .padding(24)
         }
         .frame(width: 460, height: 560)
+        .onAppear { reloadMapping() }
     }
 
     private func header(_ t: String) -> some View {
         Text(t).font(.headline)
+    }
+
+    // MARK: 按鍵綁定列
+
+    private func bindingRow(_ a: AppSettings.Action) -> some View {
+        let bound = mapping[a.rawValue]
+        let isThis = capturing == a
+        let connectedMatches = JoyConManager.shared.currentControllerName != nil
+            && JoyConManager.shared.currentProfile == profile
+        return HStack(spacing: 8) {
+            Text(a.displayName).frame(width: 120, alignment: .leading)
+            Text(bound.map(label) ?? "—")
+                .foregroundStyle(bound == nil ? .secondary : .primary)
+                .frame(minWidth: 90, alignment: .leading)
+            Spacer()
+            if isThis {
+                Text("按下按鍵…").font(.caption).foregroundStyle(.orange)
+                Button("取消") { cancelCapture() }
+            } else {
+                Button("重新綁定") { startCapture(a) }
+                    .disabled(!connectedMatches || capturing != nil)
+                if bound != nil {
+                    Button("清除") {
+                        AppSettings.shared.clearBinding(a, profile: profile); reloadMapping()
+                    }
+                }
+            }
+        }
+        .font(.callout)
+    }
+
+    /// 按鍵名 → 標籤：優先用連線控制器的即時名稱。
+    private func label(_ name: String) -> String {
+        JoyConManager.shared.liveLabel(name) ?? AppSettings.buttonLabel(name, profile: profile)
+    }
+
+    private func reloadMapping() {
+        mapping = AppSettings.shared.mapping(profile)
+    }
+    private func startCapture(_ a: AppSettings.Action) {
+        capturing = a
+        JoyConManager.shared.beginCapture { name in
+            AppSettings.shared.bind(a, button: name, profile: profile)
+            capturing = nil
+            reloadMapping()
+        }
+    }
+    private func cancelCapture() {
+        JoyConManager.shared.cancelCapture()
+        capturing = nil
     }
 
     private func install() {
