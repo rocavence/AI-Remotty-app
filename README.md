@@ -1,3 +1,5 @@
+<img src="Resources/icon-1024.png" width="128" alt="AI-Remotty">
+
 # AI-Remotty
 
 macOS menu bar app：把**遊戲手把**當成 Claude Code 的 permission 遙控器。
